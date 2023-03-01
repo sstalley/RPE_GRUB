@@ -1,5 +1,5 @@
 import networkx as nx
-
+import grub
 
 
 
@@ -29,4 +29,10 @@ for n in n_nodes:
         # Create Graph:
         g = nx.barabasi_albert_graph(n, m, seed=seed)
 
-        print(f"graph:{g}")
+        alg = grub.GRUB(g)
+
+        print(f"graph:{g}, algorithm:{alg}")
+
+        arm = alg.pick()
+
+        alg.update(arm, 1.0)

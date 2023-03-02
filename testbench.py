@@ -6,6 +6,7 @@ import grub
 # initialization
 seed = 0x54f539
 np.random.seed(seed)
+MAX_PULLS = 50
 
 # parameters for testing
 n_nodes = [10]
@@ -23,24 +24,13 @@ for n in n_nodes:
         # Create Graph:
         g = nx.barabasi_albert_graph(n, m, seed=seed)
 
-        mean_lin = np.random.multivariate_normal(np.zeros(n), 2*np.eye(n))
-        smooth_lin = grub.calc_graph_smoothness(mean_lin, g)
-        print(f"linear means:{mean_lin}")
-        print(f"linear mean smoothness:{smooth_lin}")
-
-
-        cov = np.abs(np.array(nx.normalized_laplacian_matrix(g).toarray()))
-        print(f"covariance matrix:{cov}")
-
-        mean_cov = np.random.multivariate_normal(np.zeros(n), cov)
-        smooth_cov = grub.calc_graph_smoothness(mean_cov, g)
-        print(f"correlated means:{mean_cov}")
-        print(f"correlated mean smoothness:{smooth_cov}")
-
+        bandit = grub.Bandit(g)
         alg = grub.GRUB(g)
 
         print(f"graph:{g}, algorithm:{alg}")
 
-        arm = alg.pick()
+        while (not alg.done()) and bandit.get_pulls() < MAX_PULLS:
 
-        alg.update(arm, 1.0)
+            arm = alg.pick()
+            reward = bandit.pull(arm)
+            alg.update(arm, reward)

@@ -7,6 +7,28 @@ def calc_graph_smoothness(mean, g):
     return np.sqrt(mean.T @ laplacian @ mean)
 
 
+
+class Bandit():
+    
+    def __init__(self, g):
+        self.n_pulls = 0
+        self.n_arms = nx.number_of_nodes(g)
+        self.g = g
+
+        cov = np.abs(np.array(nx.normalized_laplacian_matrix(g).toarray()))
+        self.means = np.random.multivariate_normal(np.zeros(self.n_arms), cov)
+
+    def pull(self, arm):
+        #TODO: NOISE
+        self.n_pulls += 1
+        return self.means[arm]
+
+    def get_pulls(self):
+        return self.n_pulls
+
+    def __str__(self):
+        return f"Bandit: {self.n_arms} arms, {self.n_pulls} pulls"
+
 class GRUB():
 
     def _model_ready(self):
@@ -45,6 +67,9 @@ class GRUB():
             self.n_pulls += 1
             return arm
 
+        print(f"if you got this far you are ready to start selecting arms")
+        assert False
+
 
     def update(self, arm, reward, update_model=True):
 
@@ -57,4 +82,9 @@ class GRUB():
             self.V_inv = np.linalg.inv(self.V)
             self.mean = self.V_inv @ self.x
             print(f"x shape:{self.x.shape}, mean shape:{self.mean.shape}")
+
+
+    def done(self):
+        # TODO: check if competitive set is small enough
+        return False
 

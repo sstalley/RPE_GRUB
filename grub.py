@@ -44,13 +44,15 @@ class GRUB():
 
     def _select_least_effective_pulls(self):
 
-        # TODO: check if arm was eliminated
+        arms = np.argsort(self.teff)
 
-        arm = np.argmin(self.teff)
-        print(f"selecting arm {arm} with {self.teff[arm]:.3f} effective pulls")
-        return arm
+        for arm in arms:
+            # only pick arms that are still good
+            if self.good_arms[arm]:
+                print(f"selecting arm {arm} with {self.teff[arm]:.3f} effective pulls")
+                return arm
 
-    def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-1, subgaussian=0.1, sampling_policy="min_teff"):
+    def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-1, subgaussian=0.01, sampling_policy="min_teff"):
         #determine number of arms from graph
         self.n_arms = nx.number_of_nodes(g)
         self.V = regularization * np.array(nx.laplacian_matrix(g).toarray())
@@ -58,6 +60,10 @@ class GRUB():
         self.n_pulls = 0
         self.components = nx.connected_components(g)
         self.n_components = nx.number_connected_components(g)
+
+        #initally all good
+        self.good_arms = np.full((self.n_arms), True)
+
 
         if sampling_policy == "min_teff":
             self.sampling_policy = self._select_least_effective_pulls
@@ -110,14 +116,26 @@ class GRUB():
             self.teff = 1 / np.diagonal(self.V_inv)
             self.beta = self._calc_beta()
 
-            # Calculate bounding
-            self.bound = np.sqrt(1/self.teff) * self.beta
-
             # print(f"V_inv:{self.V_inv}")
             print(f"mean:{self.mean}")
             print(f"teff:{self.teff}")
-            print(f"bound:{self.bound}")
             # print(f"beta:{self.beta}")
+
+            # Calculate bounding
+            self.bound = np.sqrt(1/self.teff) * self.beta
+            lower_bound = self.mean - self.bound
+            upper_bound = self.mean + self.bound
+            print(f"bound:{self.bound}")
+
+            # find best arm (highest lower bound)
+            best_arm = np.argmax(self.mean - self.bound)
+            best_lb = lower_bound[best_arm]
+
+            print(f"GRUB: current best arm:{best_arm} with lower bound {best_lb:.3f}")
+            # compare with other arms
+            print(f"GRUB: current upper bounds:{upper_bound}")
+
+            self.good_arms = upper_bound > best_lb
 
             print(f"total pulls:{self.n_pulls}, effective pulls:{np.sum(self.teff):.3f}")
 
@@ -137,12 +155,9 @@ class GRUB():
         best_arm = np.argmax(self.mean - self.bound)
         best_lb = lower_bound[best_arm]
 
-        print(f"GRUB: current best arm:{best_arm} with lower bound {best_lb:.3f}")
 
-        # compare with other arms
-        print(f"GRUB: current upper bounds:{upper_bound}")
 
-        remain = np.count_nonzero(upper_bound > best_lb)
+        remain = np.count_nonzero(self.good_arms)
 
         print(f"GRUB: {remain} arms still under consideration")
 

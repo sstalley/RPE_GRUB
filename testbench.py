@@ -25,7 +25,7 @@ def run_sim(bandit, alg):
     while (not alg.done()) and alg.get_pulls() < MAX_PULLS:
         arm = alg.pick()
         reward = bandit.pull(arm)
-        print(f"Testbench: arm:{arm}, reward:{reward}")
+        # print(f"Testbench: arm:{arm}, reward:{reward}")
         alg.update(arm, reward)
 
 

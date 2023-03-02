@@ -8,7 +8,6 @@ def calc_graph_smoothness(mean, g):
     return np.sqrt(mean.T @ laplacian @ mean)
 
 
-
 class Bandit():
 
     def __init__(self, g, sd=0.1):
@@ -42,7 +41,6 @@ class GRUB():
     def _model_ready(self):
         return self.n_pulls >= self.n_components
 
-
     def _select_least_effective_pulls(self):
 
         arms = np.argsort(self.teff)
@@ -50,7 +48,7 @@ class GRUB():
         for arm in arms:
             # only pick arms that are still good
             if self.good_arms[arm]:
-                print(f"selecting arm {arm} with {self.teff[arm]:.3f} effective pulls")
+                # print(f"selecting arm {arm} with {self.teff[arm]:.3f} effective pulls")
                 return arm
 
     def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-1, subgaussian=1e-2, sampling_policy="min_teff"):
@@ -83,10 +81,7 @@ class GRUB():
         # sample every graph component first
         if not self._model_ready():
             arm = np.random.choice(list(next(self.components)))
-
-            print(f"arm:{arm}")
-
-            print(f"GRUB: picking arm {arm} from component {self.n_pulls}")
+            # print(f"GRUB: picking arm {arm} from component {self.n_pulls}")
             self.n_pulls = self.n_pulls + 1
             return arm
 
@@ -98,12 +93,12 @@ class GRUB():
 
     def update(self, arm, reward, update_model=True):
 
-        print(f"GRUB: updating arm {arm} with reward {reward:.3f}...")
+        # print(f"GRUB: updating arm {arm} with reward {reward:.3f}...")
         self.V[arm,arm] = self.V[arm,arm] + 1
         self.x[arm] = self.x[arm] + reward
 
         if update_model and self._model_ready():
-            print(f"GRUB: updating model...")
+            # print(f"GRUB: updating model...")
             self.V_inv = np.linalg.inv(self.V)
             self.mean = self.V_inv @ self.x
             self.teff = 1 / np.diagonal(self.V_inv)
@@ -119,7 +114,7 @@ class GRUB():
             best_arm = np.argmax(self.mean - self.bound)
             best_lb = lower_bound[best_arm]
 
-            print(f"GRUB: current best arm:{best_arm} with lower bound {best_lb:.3f}")
+            # print(f"GRUB: current best arm:{best_arm} with lower bound {best_lb:.3f}")
             # compare with other arms
             # print(f"GRUB: current upper bounds:{upper_bound}")
 
@@ -145,7 +140,7 @@ class GRUB():
 
         remain = np.count_nonzero(self.good_arms)
 
-        print(f"GRUB: {remain} arms still under consideration")
+        # print(f"GRUB: {remain} arms still under consideration")
 
         if remain == 1:
             return True

@@ -10,12 +10,12 @@ def calc_graph_smoothness(mean, g):
 
 class Bandit():
 
-    def __init__(self, g, sd=0.1):
+    def __init__(self, g, sd=0.05, scale=20):
         self.n_pulls = 0
         self.n_arms = nx.number_of_nodes(g)
         self.g = g
         cov = np.abs(np.array(nx.normalized_laplacian_matrix(g).toarray()))
-        self.means = np.random.multivariate_normal(np.zeros(self.n_arms), cov)
+        self.means = np.random.multivariate_normal(np.zeros(self.n_arms), scale * cov)
         self.sd = sd
 
     def pull(self, arm):

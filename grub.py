@@ -23,7 +23,7 @@ class Bandit():
         while((self.prominence() < min_prominence) and timeout < GEN_TIMEOUT):
             self.means = np.random.multivariate_normal(np.zeros(self.n_arms), scale * cov)
 
-        print(f"prominence: {self.prominence()}")
+        # print(f"prominence: {self.prominence()}")
 
     def pull(self, arm):
         noise = 0

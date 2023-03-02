@@ -2,6 +2,8 @@ import numpy as np
 import networkx as nx
 import grub
 
+import matplotlib.pyplot as plt
+
 
 # initialization
 seed = 0x1359
@@ -9,7 +11,7 @@ np.random.seed(seed)
 MAX_PULLS = 5000
 
 # parameters for testing
-n_nodes = [50, 100, 150, 200, 250]
+n_nodes = [50, 100, 150, 200]
 n_runs = 20
 
 #parameters from paper
@@ -28,9 +30,14 @@ def run_sim(bandit, alg):
         # print(f"Testbench: arm:{arm}, reward:{reward}")
         alg.update(arm, reward)
 
-
+grub_pulls = []
+ucb_pulls  = []
+grub_effectives = []
 
 for n in n_nodes:
+    grub_pull = []
+    ucb_pull = []
+    grub_effective = []
     for run in range(n_runs):
         # Create Graph:
         g = nx.barabasi_albert_graph(n, m, seed=seed)
@@ -58,10 +65,35 @@ for n in n_nodes:
         run_sim(bandit, ucb)
 
         true_mean = bandit.get_means()
-        est_mean = alg.get_means()
+        grub_mean = alg.get_means()
         ucb_mean = ucb.get_means()
 
-        print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
-        print(f"GRUB best arm: {np.argmax(est_mean)} with mean {np.max(est_mean):.4f} after {alg.get_pulls()} pulls ({alg.get_effective_pulls()} effective)")
-        print(f"UCB  best arm: {np.argmax(ucb_mean)} with mean {np.max(ucb_mean):.4f} after {ucb.get_pulls()} pulls ({ucb.get_effective_pulls()} effective)")
-        # print(f"Total estimation error: {np.linalg.norm(est_mean-true_mean):.4f}")
+        true_arm = np.argmax(true_mean)
+        grub_arm = np.argmax(grub_mean)
+        ucb_arm  = np.argmax(ucb_mean)
+
+        print(f"{n} arm run #{run}")
+        if grub_arm != true_arm:
+            print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
+            print(f"GRUB best arm: {np.argmax(grub_mean)} with mean {np.max(grub_mean):.4f} after {alg.get_pulls()} pulls ({alg.get_effective_pulls()} effective)")
+
+        if ucb_arm != true_arm:
+            print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
+            print(f"UCB  best arm: { np.argmax(ucb_mean)} with mean { np.max(ucb_mean):.4f} after {ucb.get_pulls()} pulls")
+
+        grub_pull.append(alg.get_pulls())
+        ucb_pull.append(ucb.get_pulls())
+        grub_effective.append(alg.get_effective_pulls())
+
+
+    grub_pulls.append(np.mean(grub_pull))
+    ucb_pulls.append(np.mean(ucb_pull))
+    grub_effectives.append(np.mean(grub_effective))
+
+plt.title("Average Pulls per Number of Arms")
+
+plt.scatter(n_nodes, grub_pulls, label="GRUB")
+plt.scatter(n_nodes, ucb_pulls, label="UCB")
+plt.scatter(n_nodes, grub_effectives, label="GRUB (effective)")
+plt.legend()
+plt.show()

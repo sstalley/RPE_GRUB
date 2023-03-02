@@ -10,13 +10,9 @@ seed = 0x1359
 np.random.seed(seed)
 MAX_PULLS = 5000
 
-# parameters for testing
+#parameters from paper
 n_nodes = [50, 100, 150, 200]
 n_runs = 20
-
-#parameters from paper
-#n_nodes = [50, 100, 150, 200]
-#n_runs = 20
 m = 2
 
 
@@ -30,7 +26,7 @@ def run_sim(bandit, alg):
         # print(f"Testbench: arm:{arm}, reward:{reward}")
         alg.update(arm, reward)
 
-def test_graph(g):
+def test_graph(n, g):
 
     # create bandit
     bandit = grub.Bandit(g)
@@ -62,7 +58,6 @@ def test_graph(g):
     grub_arm = np.argmax(grub_mean)
     ucb_arm  = np.argmax(ucb_mean)
 
-    print(f"{n} arm run #{run}")
     if grub_arm != true_arm:
         print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
         print(f"GRUB best arm: {np.argmax(grub_mean)} with mean {np.max(grub_mean):.4f} after {alg.get_pulls()} pulls ({alg.get_effective_pulls()} effective)")
@@ -74,25 +69,52 @@ def test_graph(g):
     return alg.get_pulls(), ucb.get_pulls(), alg.get_effective_pulls()
 
 
+def run_simulations():
 
-grub_pulls = []
-ucb_pulls  = []
-grub_effectives = []
+    grub_pulls = []
+    ucb_pulls  = []
+    grub_effectives = []
 
-for n in n_nodes:
-    grub_pull = []
-    ucb_pull = []
-    grub_effective = []
-    for run in range(n_runs):
-        # Create Graph:
-        g = nx.barabasi_albert_graph(n, m, seed=seed)
+    for n in n_nodes:
+        grub_pull = []
+        ucb_pull = []
+        grub_effective = []
+        for run in range(n_runs):
+            print(f"{n} arm run #{run}")
 
-        grub_pull, ucb_pull, grub_effective = test_graph(g)
+            # Create Graph:
+            g = nx.barabasi_albert_graph(n, m, seed=seed)
+
+            grub_pull, ucb_pull, grub_effective = test_graph(n, g)
 
 
-    grub_pulls.append(np.mean(grub_pull))
-    ucb_pulls.append(np.mean(ucb_pull))
-    grub_effectives.append(np.mean(grub_effective))
+        grub_pulls.append(np.mean(grub_pull))
+        ucb_pulls.append(np.mean(ucb_pull))
+        grub_effectives.append(np.mean(grub_effective))
+
+    return np.array([grub_pulls, ucb_pulls, grub_effectives])
+
+
+
+cache_name = "./results_cache.npy"
+fig_name = "BA_figure.eps"
+
+try:
+    print("trying to load cached values from", cache_name)
+    results = np.load(cache_name)
+    print("loaded cached values")
+
+except IOError:
+    print("could not load cache, running simulation")
+    results = run_simulations()
+    np.save(cache_name, results)
+
+print(results)
+
+grub_pulls = results[0]
+ucb_pulls = results[1]
+grub_effectives = results[2]
+
 
 plt.title("Average Pulls per Number of Arms")
 
@@ -100,4 +122,5 @@ plt.scatter(n_nodes, grub_pulls, label="GRUB")
 plt.scatter(n_nodes, ucb_pulls, label="UCB")
 plt.scatter(n_nodes, grub_effectives, label="GRUB (effective)")
 plt.legend()
-plt.show()
+plt.savefig(fig_name, dpi=300)
+

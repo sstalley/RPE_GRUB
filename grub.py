@@ -41,7 +41,7 @@ class GRUB():
         return self.n_pulls >= self.n_components
 
     #guessing on smoothness
-    def __init__(self, g, regularization=1.0, smoothness=0.1, error_bound=1e-3, subgaussian=2.0):
+    def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-3, subgaussian=2.0):
         #determine number of arms from graph
         self.n_arms = nx.number_of_nodes(g)
         self.V = regularization * np.array(nx.laplacian_matrix(g).toarray())

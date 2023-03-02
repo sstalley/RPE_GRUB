@@ -18,16 +18,23 @@ n_runs = 1
 m = 2
 
 
+np.set_printoptions(precision=3)
 
 for n in n_nodes:
     for run in range(n_runs):
         # Create Graph:
         g = nx.barabasi_albert_graph(n, m, seed=seed)
 
+        # create bandit
         bandit = grub.Bandit(g)
-        alg = grub.GRUB(g)
 
-        print(f"graph:{g}, algorithm:{alg}")
+        # calculate parameters
+        smoothness = grub.calc_graph_smoothness(bandit.get_means(),g)
+
+        #create grub
+        alg = grub.GRUB(g, smoothness=smoothness)
+
+        print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
 
         while (not alg.done()) and bandit.get_pulls() < MAX_PULLS:
 

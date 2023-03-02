@@ -1,6 +1,7 @@
 import numpy as np
 import networkx as nx
 
+import matplotlib.pyplot as plt
 
 def calc_graph_smoothness(mean, g):
     laplacian = np.array(nx.laplacian_matrix(g).toarray())
@@ -9,7 +10,7 @@ def calc_graph_smoothness(mean, g):
 
 
 class Bandit():
-    
+
     def __init__(self, g):
         self.n_pulls = 0
         self.n_arms = nx.number_of_nodes(g)
@@ -25,16 +26,22 @@ class Bandit():
     def get_pulls(self):
         return self.n_pulls
 
+    def get_means(self):
+        return self.means
+
     def __str__(self):
         return f"Bandit: {self.n_arms} arms, {self.n_pulls} pulls"
 
 class GRUB():
 
+    def _calc_beta(self):
+        return self.regularization * self.smoothness + 2 * self.subgaussian * np.sqrt(14*np.log( 2*self.n_arms*self.teff / self.error_bound))
+
     def _model_ready(self):
         return self.n_pulls >= self.n_components
 
     #guessing on smoothness
-    def __init__(self, g, regularization=2.0, smoothness=0.1, error_bound=1e-3, subgaussian=2.0):
+    def __init__(self, g, regularization=1.0, smoothness=0.1, error_bound=1e-3, subgaussian=2.0):
         #determine number of arms from graph
         self.n_arms = nx.number_of_nodes(g)
         self.V = regularization * np.array(nx.laplacian_matrix(g).toarray())
@@ -76,13 +83,28 @@ class GRUB():
         self.V[arm,arm] =+ 1
         self.x[arm] =+ reward
 
+        print(f"GRUB: V:\n{self.V}")
+        print(f"GRUB: x:\n{self.x}")
+
+        plt.imshow(self.V, interpolation='nearest')
+        plt.show()
+
+
         if update_model and self._model_ready():
             print(f"GRUB: updating model...")
             self.V_inv = np.linalg.inv(self.V)
             self.mean = self.V_inv @ self.x
             self.teff = 1 / np.diagonal(self.V_inv)
+            self.beta = self._calc_beta()
+
+
+            print(f"V_inv:{self.V_inv}")
             print(f"mean:{self.mean}")
             print(f"teff:{self.teff}")
+            print(f"beta:{self.beta}")
+
+            plt.imshow(self.V_inv, interpolation='nearest')
+            plt.show()
 
 
     def done(self):

@@ -7,16 +7,23 @@ def calc_graph_smoothness(mean, g):
     laplacian = np.array(nx.laplacian_matrix(g).toarray())
     return np.sqrt(mean.T @ laplacian @ mean)
 
+GEN_TIMEOUT = 1000
 
 class Bandit():
 
-    def __init__(self, g, sd=0.05, scale=20):
+    def __init__(self, g, sd=0.05, scale=20, min_prominence=1.0):
         self.n_pulls = 0
         self.n_arms = nx.number_of_nodes(g)
         self.g = g
         cov = np.abs(np.array(nx.normalized_laplacian_matrix(g).toarray()))
         self.means = np.random.multivariate_normal(np.zeros(self.n_arms), scale * cov)
         self.sd = sd
+
+        timeout = 0
+        while((self.prominence() < min_prominence) and timeout < GEN_TIMEOUT):
+            self.means = np.random.multivariate_normal(np.zeros(self.n_arms), scale * cov)
+
+        print(f"prominence: {self.prominence()}")
 
     def pull(self, arm):
         noise = 0
@@ -27,8 +34,14 @@ class Bandit():
 
         return self.means[arm] + noise
 
+    def prominence(self):
+        sorted_means = np.sort(self.means)
+        return sorted_means[-1] - sorted_means[-2]
+
+
     def get_means(self):
         return self.means
+
 
     def __str__(self):
         return f"Bandit: {self.n_arms} arms, {self.n_pulls} pulls"
@@ -62,7 +75,6 @@ class GRUB():
 
         #initally all good
         self.good_arms = np.full((self.n_arms), True)
-
 
         if sampling_policy == "min_teff":
             self.sampling_policy = self._select_least_effective_pulls

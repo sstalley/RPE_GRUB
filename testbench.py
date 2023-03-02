@@ -39,21 +39,21 @@ for n in n_nodes:
         bandit = grub.Bandit(g)
 
         # calculate parameters
-        smoothness = grub.calc_graph_smoothness(bandit.get_means(),g)
-        smoothness = smoothness * 10 / n
+        smoothness = grub.calc_graph_smoothness(bandit.get_means(),g) / 4
 
+        regularization = 1e-1
         subgaussian = 1e-1
         error_bound = 1e-2
 
         #create grub
-        alg = grub.GRUB(g, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
+        alg = grub.GRUB(g, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
 
         #print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
 
         run_sim(bandit, alg)
 
         nc_graph = nx.empty_graph(n)
-        ucb = grub.GRUB(nc_graph, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
+        ucb = grub.GRUB(nc_graph, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
 
         run_sim(bandit, ucb)
 

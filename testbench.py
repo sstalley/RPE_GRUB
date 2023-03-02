@@ -6,10 +6,10 @@ import grub
 # initialization
 seed = 0x54f539
 np.random.seed(seed)
-MAX_PULLS = 500
+MAX_PULLS = 5000
 
 # parameters for testing
-n_nodes = [10]
+n_nodes = [50]
 n_runs = 1
 
 #parameters from paper
@@ -39,18 +39,20 @@ for n in n_nodes:
         bandit = grub.Bandit(g)
 
         # calculate parameters
-        # smoothness = grub.calc_graph_smoothness(bandit.get_means(),g)
-        smoothness = 1
+        smoothness = grub.calc_graph_smoothness(bandit.get_means(),g)
+        smoothness = smoothness * 5 / n
+
+        subgaussian = 2e-2
 
         #create grub
-        alg = grub.GRUB(g, smoothness=smoothness)
+        alg = grub.GRUB(g, smoothness=smoothness, subgaussian=subgaussian)
 
         print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
 
         run_sim(bandit, alg)
 
         nc_graph = nx.empty_graph(n)
-        ucb = grub.GRUB(nc_graph, smoothness=smoothness)
+        ucb = grub.GRUB(nc_graph, smoothness=smoothness, subgaussian=subgaussian)
 
         run_sim(bandit, ucb)
 

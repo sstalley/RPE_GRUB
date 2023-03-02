@@ -53,7 +53,7 @@ class GRUB():
                 print(f"selecting arm {arm} with {self.teff[arm]:.3f} effective pulls")
                 return arm
 
-    def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-1, subgaussian=0.01, sampling_policy="min_teff"):
+    def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-1, subgaussian=1e-2, sampling_policy="min_teff"):
         #determine number of arms from graph
         self.n_arms = nx.number_of_nodes(g)
         self.V = regularization * np.array(nx.laplacian_matrix(g).toarray())

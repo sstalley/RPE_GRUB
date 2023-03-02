@@ -6,7 +6,7 @@ import grub
 # initialization
 seed = 0x54f539
 np.random.seed(seed)
-MAX_PULLS = 50
+MAX_PULLS = 500
 
 # parameters for testing
 n_nodes = [10]
@@ -40,4 +40,7 @@ for n in n_nodes:
 
             arm = alg.pick()
             reward = bandit.pull(arm)
+
+            print(f"Testbench: arm:{arm}, reward:{reward}")
+
             alg.update(arm, reward)

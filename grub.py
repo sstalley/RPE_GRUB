@@ -20,7 +20,8 @@ class Bandit():
 
     def pull(self, arm):
         #TODO: NOISE
-        self.n_pulls += 1
+        self.n_pulls = self.n_pulls + 1
+        print(f"pull: means:{self.means}")
         return self.means[arm]
 
     def get_pulls(self):
@@ -35,13 +36,21 @@ class Bandit():
 class GRUB():
 
     def _calc_beta(self):
-        return self.regularization * self.smoothness + 2 * self.subgaussian * np.sqrt(14*np.log( 2*self.n_arms*self.teff / self.error_bound))
+        return self.regularization * self.smoothness + 2 * self.subgaussian * np.sqrt(14*np.log( 2*self.n_arms*self.teff*self.teff / self.error_bound))
 
     def _model_ready(self):
         return self.n_pulls >= self.n_components
 
-    #guessing on smoothness
-    def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-3, subgaussian=2.0):
+
+    def _select_least_effective_pulls(self):
+
+        # TODO: check if arm was eliminated
+
+        arm = np.argmin(self.teff)
+        print(f"selecting arm {arm} with {self.teff[arm]:.3f} effective pulls")
+        return arm
+
+    def __init__(self, g, regularization=0.1, smoothness=0.1, error_bound=1e-1, subgaussian=0.1, sampling_policy="min_teff"):
         #determine number of arms from graph
         self.n_arms = nx.number_of_nodes(g)
         self.V = regularization * np.array(nx.laplacian_matrix(g).toarray())
@@ -50,6 +59,8 @@ class GRUB():
         self.components = nx.connected_components(g)
         self.n_components = nx.number_connected_components(g)
 
+        if sampling_policy == "min_teff":
+            self.sampling_policy = self._select_least_effective_pulls
 
         self.regularization = regularization
         self.smoothness = smoothness
@@ -70,24 +81,26 @@ class GRUB():
             print(f"arm:{arm}")
 
             print(f"GRUB: picking arm {arm} from component {self.n_pulls}")
-            self.n_pulls += 1
+            self.n_pulls = self.n_pulls + 1
             return arm
 
-        print(f"if you got this far you are ready to start selecting arms")
-        assert False
+        #select an arm
+        arm = self.sampling_policy()
+        self.n_pulls = self.n_pulls + 1
+        return arm
 
 
     def update(self, arm, reward, update_model=True):
 
-        print(f"GRUB: updating arm {arm} with reward {reward}...")
-        self.V[arm,arm] =+ 1
-        self.x[arm] =+ reward
+        print(f"GRUB: updating arm {arm} with reward {reward:.3f}...")
+        self.V[arm,arm] = self.V[arm,arm] + 1
+        self.x[arm] = self.x[arm] + reward
 
-        print(f"GRUB: V:\n{self.V}")
-        print(f"GRUB: x:\n{self.x}")
+        # print(f"GRUB: V:\n{self.V}")
+        # print(f"GRUB: x:\n{self.x}")
 
-        plt.imshow(self.V, interpolation='nearest')
-        plt.show()
+        # plt.imshow(self.V, interpolation='nearest')
+        # plt.show()
 
 
         if update_model and self._model_ready():
@@ -97,17 +110,45 @@ class GRUB():
             self.teff = 1 / np.diagonal(self.V_inv)
             self.beta = self._calc_beta()
 
+            # Calculate bounding
+            self.bound = np.sqrt(1/self.teff) * self.beta
 
-            print(f"V_inv:{self.V_inv}")
+            # print(f"V_inv:{self.V_inv}")
             print(f"mean:{self.mean}")
             print(f"teff:{self.teff}")
-            print(f"beta:{self.beta}")
+            print(f"bound:{self.bound}")
+            # print(f"beta:{self.beta}")
 
-            plt.imshow(self.V_inv, interpolation='nearest')
-            plt.show()
+            print(f"total pulls:{self.n_pulls}, effective pulls:{np.sum(self.teff):.3f}")
+
+            # plt.imshow(self.V_inv, interpolation='nearest')
+            # plt.show()
 
 
     def done(self):
-        # TODO: check if competitive set is small enough
+
+        if not self._model_ready():
+            return False
+
+        lower_bound = self.mean - self.bound
+        upper_bound = self.mean + self.bound
+
+        # find best arm (highest lower bound)
+        best_arm = np.argmax(self.mean - self.bound)
+        best_lb = lower_bound[best_arm]
+
+        print(f"GRUB: current best arm:{best_arm} with lower bound {best_lb:.3f}")
+
+        # compare with other arms
+        print(f"GRUB: current upper bounds:{upper_bound}")
+
+        remain = np.count_nonzero(upper_bound > best_lb)
+
+        print(f"GRUB: {remain} arms still under consideration")
+
+
+        if remain == 1:
+            return True
+
         return False
 

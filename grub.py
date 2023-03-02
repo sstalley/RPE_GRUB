@@ -1,6 +1,12 @@
 import numpy as np
 import networkx as nx
 
+
+def calc_graph_smoothness(mean, g):
+    laplacian = np.array(nx.laplacian_matrix(g).toarray())
+    return np.sqrt(mean.T @ laplacian @ mean)
+
+
 class GRUB():
 
     def _model_ready(self):

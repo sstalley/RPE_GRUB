@@ -30,6 +30,51 @@ def run_sim(bandit, alg):
         # print(f"Testbench: arm:{arm}, reward:{reward}")
         alg.update(arm, reward)
 
+def test_graph(g):
+
+    # create bandit
+    bandit = grub.Bandit(g)
+
+    # calculate parameters
+    smoothness = grub.calc_graph_smoothness(bandit.get_means(),g) / 4
+
+    regularization = 1e-1
+    subgaussian = 1e-1
+    error_bound = 1e-2
+
+    #create grub
+    alg = grub.GRUB(g, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
+
+    #print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
+
+    run_sim(bandit, alg)
+
+    nc_graph = nx.empty_graph(n)
+    ucb = grub.GRUB(nc_graph, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
+
+    run_sim(bandit, ucb)
+
+    true_mean = bandit.get_means()
+    grub_mean = alg.get_means()
+    ucb_mean = ucb.get_means()
+
+    true_arm = np.argmax(true_mean)
+    grub_arm = np.argmax(grub_mean)
+    ucb_arm  = np.argmax(ucb_mean)
+
+    print(f"{n} arm run #{run}")
+    if grub_arm != true_arm:
+        print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
+        print(f"GRUB best arm: {np.argmax(grub_mean)} with mean {np.max(grub_mean):.4f} after {alg.get_pulls()} pulls ({alg.get_effective_pulls()} effective)")
+
+    if ucb_arm != true_arm:
+        print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
+        print(f"UCB  best arm: { np.argmax(ucb_mean)} with mean { np.max(ucb_mean):.4f} after {ucb.get_pulls()} pulls")
+
+    return alg.get_pulls(), ucb.get_pulls(), alg.get_effective_pulls()
+
+
+
 grub_pulls = []
 ucb_pulls  = []
 grub_effectives = []
@@ -42,48 +87,7 @@ for n in n_nodes:
         # Create Graph:
         g = nx.barabasi_albert_graph(n, m, seed=seed)
 
-        # create bandit
-        bandit = grub.Bandit(g)
-
-        # calculate parameters
-        smoothness = grub.calc_graph_smoothness(bandit.get_means(),g) / 4
-
-        regularization = 1e-1
-        subgaussian = 1e-1
-        error_bound = 1e-2
-
-        #create grub
-        alg = grub.GRUB(g, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
-
-        #print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
-
-        run_sim(bandit, alg)
-
-        nc_graph = nx.empty_graph(n)
-        ucb = grub.GRUB(nc_graph, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
-
-        run_sim(bandit, ucb)
-
-        true_mean = bandit.get_means()
-        grub_mean = alg.get_means()
-        ucb_mean = ucb.get_means()
-
-        true_arm = np.argmax(true_mean)
-        grub_arm = np.argmax(grub_mean)
-        ucb_arm  = np.argmax(ucb_mean)
-
-        print(f"{n} arm run #{run}")
-        if grub_arm != true_arm:
-            print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
-            print(f"GRUB best arm: {np.argmax(grub_mean)} with mean {np.max(grub_mean):.4f} after {alg.get_pulls()} pulls ({alg.get_effective_pulls()} effective)")
-
-        if ucb_arm != true_arm:
-            print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
-            print(f"UCB  best arm: { np.argmax(ucb_mean)} with mean { np.max(ucb_mean):.4f} after {ucb.get_pulls()} pulls")
-
-        grub_pull.append(alg.get_pulls())
-        ucb_pull.append(ucb.get_pulls())
-        grub_effective.append(alg.get_effective_pulls())
+        grub_pull, ucb_pull, grub_effective = test_graph(g)
 
 
     grub_pulls.append(np.mean(grub_pull))

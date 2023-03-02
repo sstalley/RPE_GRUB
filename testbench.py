@@ -20,6 +20,16 @@ m = 2
 
 np.set_printoptions(precision=3)
 
+
+def run_sim(bandit, alg):
+    while (not alg.done()) and alg.get_pulls() < MAX_PULLS:
+        arm = alg.pick()
+        reward = bandit.pull(arm)
+        print(f"Testbench: arm:{arm}, reward:{reward}")
+        alg.update(arm, reward)
+
+
+
 for n in n_nodes:
     for run in range(n_runs):
         # Create Graph:
@@ -36,19 +46,18 @@ for n in n_nodes:
 
         print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
 
-        while (not alg.done()) and bandit.get_pulls() < MAX_PULLS:
+        run_sim(bandit, alg)
 
-            arm = alg.pick()
-            reward = bandit.pull(arm)
+        nc_graph = nx.empty_graph(n)
+        ucb = grub.GRUB(nc_graph, smoothness=smoothness)
 
-            print(f"Testbench: arm:{arm}, reward:{reward}")
-
-            alg.update(arm, reward)
+        run_sim(bandit, ucb)
 
         true_mean = bandit.get_means()
         est_mean = alg.get_means()
+        ucb_mean = ucb.get_means()
 
         print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
-        print(f"Estimated best arm: {np.argmax(est_mean)} with mean {np.max(est_mean):.4f}")
-
-        print(f"Total estimation error: {np.linalg.norm(est_mean-true_mean):.4f}")
+        print(f"GRUB best arm: {np.argmax(est_mean)} with mean {np.max(est_mean):.4f} after {alg.get_pulls()} pulls ({alg.get_effective_pulls()} effective)")
+        print(f"UCB  best arm: {np.argmax(ucb_mean)} with mean {np.max(ucb_mean):.4f} after {ucb.get_pulls()} pulls ({ucb.get_effective_pulls()} effective)")
+        # print(f"Total estimation error: {np.linalg.norm(est_mean-true_mean):.4f}")

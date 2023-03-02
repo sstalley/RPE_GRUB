@@ -24,9 +24,6 @@ class Bandit():
         print(f"pull: means:{self.means}")
         return self.means[arm]
 
-    def get_pulls(self):
-        return self.n_pulls
-
     def get_means(self):
         return self.means
 
@@ -101,13 +98,6 @@ class GRUB():
         self.V[arm,arm] = self.V[arm,arm] + 1
         self.x[arm] = self.x[arm] + reward
 
-        # print(f"GRUB: V:\n{self.V}")
-        # print(f"GRUB: x:\n{self.x}")
-
-        # plt.imshow(self.V, interpolation='nearest')
-        # plt.show()
-
-
         if update_model and self._model_ready():
             print(f"GRUB: updating model...")
             self.V_inv = np.linalg.inv(self.V)
@@ -115,16 +105,11 @@ class GRUB():
             self.teff = 1 / np.diagonal(self.V_inv)
             self.beta = self._calc_beta()
 
-            # print(f"V_inv:{self.V_inv}")
-            print(f"mean:{self.mean}")
-            print(f"teff:{self.teff}")
-            # print(f"beta:{self.beta}")
-
             # Calculate bounding
             self.bound = np.sqrt(1/self.teff) * self.beta
             lower_bound = self.mean - self.bound
             upper_bound = self.mean + self.bound
-            print(f"bound:{self.bound}")
+            # print(f"bound:{self.bound}")
 
             # find best arm (highest lower bound)
             best_arm = np.argmax(self.mean - self.bound)
@@ -132,11 +117,11 @@ class GRUB():
 
             print(f"GRUB: current best arm:{best_arm} with lower bound {best_lb:.3f}")
             # compare with other arms
-            print(f"GRUB: current upper bounds:{upper_bound}")
+            # print(f"GRUB: current upper bounds:{upper_bound}")
 
             self.good_arms = upper_bound > best_lb
 
-            print(f"total pulls:{self.n_pulls}, effective pulls:{np.sum(self.teff):.3f}")
+            # print(f"total pulls:{self.n_pulls}, effective pulls:{np.sum(self.teff):.3f}")
 
             # plt.imshow(self.V_inv, interpolation='nearest')
             # plt.show()
@@ -165,3 +150,13 @@ class GRUB():
 
     def get_means(self):
         return self.mean
+
+    def get_pulls(self):
+        return self.n_pulls
+
+    def get_effective_pulls(self):
+        if self._model_ready():
+            return np.sum(self.teff)
+        else:
+            return self.n_pulls
+

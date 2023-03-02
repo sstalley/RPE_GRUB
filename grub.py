@@ -14,7 +14,6 @@ class Bandit():
         self.n_pulls = 0
         self.n_arms = nx.number_of_nodes(g)
         self.g = g
-
         cov = np.abs(np.array(nx.normalized_laplacian_matrix(g).toarray()))
         self.means = np.random.multivariate_normal(np.zeros(self.n_arms), cov)
 
@@ -81,7 +80,9 @@ class GRUB():
             print(f"GRUB: updating model...")
             self.V_inv = np.linalg.inv(self.V)
             self.mean = self.V_inv @ self.x
-            print(f"x shape:{self.x.shape}, mean shape:{self.mean.shape}")
+            self.teff = 1 / np.diagonal(self.V_inv)
+            print(f"mean:{self.mean}")
+            print(f"teff:{self.teff}")
 
 
     def done(self):

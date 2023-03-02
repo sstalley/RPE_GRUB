@@ -44,3 +44,11 @@ for n in n_nodes:
             print(f"Testbench: arm:{arm}, reward:{reward}")
 
             alg.update(arm, reward)
+
+        true_mean = bandit.get_means()
+        est_mean = alg.get_means()
+
+        print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
+        print(f"Estimated best arm: {np.argmax(est_mean)} with mean {np.max(est_mean):.4f}")
+
+        print(f"Total estimation error: {np.linalg.norm(est_mean-true_mean):.4f}")

@@ -77,7 +77,6 @@ class GRUB():
     def __str__(self):
         return f"GRUB: {self.n_arms} arms, {self.n_pulls} pulls"
 
-
     def pick(self):
 
         # sample every graph component first
@@ -155,15 +154,14 @@ class GRUB():
         best_arm = np.argmax(self.mean - self.bound)
         best_lb = lower_bound[best_arm]
 
-
-
         remain = np.count_nonzero(self.good_arms)
 
         print(f"GRUB: {remain} arms still under consideration")
-
 
         if remain == 1:
             return True
 
         return False
 
+    def get_means(self):
+        return self.mean

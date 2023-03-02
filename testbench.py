@@ -39,7 +39,8 @@ for n in n_nodes:
         bandit = grub.Bandit(g)
 
         # calculate parameters
-        smoothness = grub.calc_graph_smoothness(bandit.get_means(),g)
+        # smoothness = grub.calc_graph_smoothness(bandit.get_means(),g)
+        smoothness = 1
 
         #create grub
         alg = grub.GRUB(g, smoothness=smoothness)

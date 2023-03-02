@@ -11,18 +11,22 @@ def calc_graph_smoothness(mean, g):
 
 class Bandit():
 
-    def __init__(self, g):
+    def __init__(self, g, sd=0.1):
         self.n_pulls = 0
         self.n_arms = nx.number_of_nodes(g)
         self.g = g
         cov = np.abs(np.array(nx.normalized_laplacian_matrix(g).toarray()))
         self.means = np.random.multivariate_normal(np.zeros(self.n_arms), cov)
+        self.sd = sd
 
     def pull(self, arm):
-        #TODO: NOISE
+        noise = 0
         self.n_pulls = self.n_pulls + 1
-        print(f"pull: means:{self.means}")
-        return self.means[arm]
+
+        if self.sd > 0:
+            noise = np.random.normal(scale=self.sd)
+
+        return self.means[arm] + noise
 
     def get_means(self):
         return self.means

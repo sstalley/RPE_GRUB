@@ -289,4 +289,104 @@ Most recent version available \href{https://github.com/sstalley/RPE_GRUB}{here}.
 
 \section{Algorithm Modifications and Applications}
 
+GRUB is an algorithm designed to find the best arm in terms of reward.
+It solves the pure-exploration variant of the multi-armed bandit problem when graphical similarity information is available for the arms.
+GRUB can solve any problem that can be re-framed into this problem of best-arm identification. \\
+
+Unfortunately GRUB is only applicable to similarity graphs, making it’s utility limited for more general graph-based problems.
+Biological sciences, particularly the field of Bioinformatics makes extensive use of graphical data.
+For example, Graphs are used to describe protein strains in epigenetics, gene sequences in genomics, interactions between proteins in proteomics, and driver interactions in metabolomics.
+In these cases, the edges of the graph represent things other than similarity (such as molecular connections or chemical reactions), and as such GRUB is not applicable to this data.
+
+\subsection{N-best arms modification}
+
+GRUB is inherently a ``one-trick pony'' in the sense that it solves a single class of problem, limiting the number of applications where it can be used.
+One modification that improves the usefulness of GRUB is to increase the set size of the arms found.
+While this paper only considers the case where a single best arm is identified, this algorithm can be used to find a set of any size,
+and can be modified to handle cases where the final size of the best-arms set is unknown. \\
+
+To use GRUB to find the N-best arms the following modifications must be made: \\
+\begin{itemize}
+    \item Change the stopping condition from when $|A|=1$ to when $|A|=N$
+    \item When determining if an arm is in the competitive set, use the lowest bound of the N-best arms (instead of just $a_{max}$).
+    Only remove an arm from the competitive set once it is outside the lowest bound out of ALL of the current N-best arms.
+\end{itemize}
+
+This method should work for any fixed number of arms, as it will produce a set of size N that we are confident contains the best arms.
+This does not handle the case where the size of the final set is unknown
+(ie: if we know there is a subset of high-reward arms but the size of the subset is not known a priori).
+If the range of rewards is known a priori, then we can use a fixed bound (instead of a bound derived from $a_{max}$) and eliminate arms until we are confident we have the set of arms above the fixed bound.
+
+\subsection{Parallel Sampling}
+
+Another limitation of GRUB is that it assumes the sampling process is purely iterative and does not consider the parallel case where multiple samples could be taken in a single time step.
+This is especially important for sampling problems where the limiting factor is time. \\
+
+Fortunately GRUB can be modified in a straightforward way to handle multiple simultaneous samples and rewards.
+By adding a sampling policy that can select multiple arms (ex: MVM with the N highest margin arms), and updating $x_t$ and $V_t$ once for each arm pulled,
+GRUB can handle multiple simultaneous samples per iteration.
+The rest of the algorithm does not need to be modified.
+It’s worth noting that this modification also reduces the per-sample computational expense of GRUB,
+as $V_t$ is inverted once for each set of samples instead of once for every individual sample. \\
+
+With these two modifications we have transformed GRUB from a sequential best-arm identifier into a parallel N-best arms identifier.
+GRUB went from taking one sample at a time to identify one arm into taking multiple samples at a time to identify multiple promising arms.
+This greatly expands the class of problems GRUB can be applied to.
+
+\subsection{Distance-Penalized Boundary Estimation}
+
+A straightforward approach to applying GRUB for the distance-penalized boundary-estimation problem would be to apply GRUB to the same graph-based sampling problem that CuP solves to find the set of cut edges.
+In CuP the continuous sample space is discretized into a grid of sample locations connected by edges.
+The goal is to identify the set of ``cut edges'', i.e. the set of edges that cross the boundary by sampling both ends of the edge.
+GRUB could be used to find the set of ``cut edges'' by eliminating all the edges that we are confident do not cross the boundary. \\
+
+This would require the following modifications to the algorithm:
+\begin{itemize}
+    \item use a fixed confidence bound instead of the lower bound of $a_{max}$.
+    \item change the stopping condition from $|A|=1$ to when our set is complete (ie: when we are confident nothing else is above the fixed bound)
+    \item use a sampling policy that picks edges to investigate and prioritizes nearby sample locations
+    \item use a similarity graph based off of edge location. Cut edges are nearby other cut edges - a cell with one cut edge is guaranteed to contain at least one more.
+    Use the similarity graph to let GRUB leverage this spatial locality.
+    \item Construct a reward function that rewards finding cut edges
+\end{itemize}
+
+Note that the sampling policy would have to select a set of nodes to sample in order to uncover an edge. \\
+
+Instead of framing this problem as finding the set of cut edges (and having each node in the similarity graph represent an edge),
+one could also frame this problem as finding the set of informative sample locations (having each node in the similarity graph represent a sample location), providing a reward for each useful sample.
+Informative samples are near one another, just like cut edges, so the similarity graph could still be used to leverage the spatial locality.
+It is unclear which method would be superior without further investigation.
+
+\subsection{Plant Breeding}
+
+Traditional plant breeding programs are another such example problem.
+In such programs, plants are selected, crossed, and grown for experimental purposes.
+Typically the goal of such programs is to produce improved varieties of plants (ex: higher yields, unique flavors, more disease resistant, drought tolerant, etc.).
+New varieties are created by selecting and cross breeding existing varieties. In this sense plant breeding is naturally a sampling problem. \\
+
+Plants are often seasonal and take time to grow and mature, making a purely sequential selection process impractical.
+Additionally, agriculture is a field that is very scalable, and while growing a plant individually can be quite expensive,
+the cost per plant drops dramatically when growing multiple plants simultaneously.
+For these reasons a parallel selection process is necessary. \\
+
+Genetic diversity is another important element of plant breeding.
+Breeders cannot create unique new varieties without a wide variety of genes to cross.
+Monocultures, while common in commercial agriculture, are undesirable for breeding.
+For that reason the goal of breeding programs is not to produce a single new variety but rather multiple new varieties.
+As such, an algorithm that seeks to find multiple different ``best'' varieties with the same features is much more suited to this application. \\
+
+With the modifications above, GRUB could be applied to a plant breeding program by having it select plants to grow over several growing seasons.
+Assume we have a set of plant varieties that we want to grow to find the ``best'' varieties.
+Also assume we have some similarity information about the varieties.
+This information could be derived from genetic sequencing, phenotypic properties, or any other correlatable feature.
+GRUB could be used to confidently find a set of the N best plants.
+First we define a reward function to rate the plants, then for each season have GRUB select M plants to grow that season.
+After several seasons of growing and rating the varieties, GRUB would begin to eliminate varieties that it is confident are not the best,
+eventually determining the best N varieties in terms of our reward. \\
+
+This application is motivated by regional agricultural research.
+There are multiple plant breeding programs throughout the state and metro area.
+Oregon State University is home to \href{https://plantbreeding.oregonstate.edu/}{nine active breeding programs},
+and there are several private commercial breeding programs across the state investigating everything from Broccoli to Cannabis.
+
 \end{document}

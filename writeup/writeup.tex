@@ -105,6 +105,8 @@
 %% For problem titles
 %\titleformat{\section}{\normalfont\bf}{Problem \thesection}{1em}{}
 
+\setlength{\parindent}{0pt}
+
 \begin{document}
 
 
@@ -177,9 +179,9 @@ They also suggest looking into ways to automatically and dynamically determine v
 In order to get an initial estimate for each arm, GRUB samples a single arm in each graph component.
 After this initialization GRUB enters a sampling loop.
 After each sample a mean reward estimate and a confidence interval are computed for every arm still in consideration.
-The competitive arm amax with the highest lower confidence bound is then identified and compared with the other arms in the competitive set A.
-Arms with upper bounds below the lower bound of amax are then removed from A.
-This process of sampling, estimating, and eliminating arms repeats until A only contains one arm.
+The competitive arm $a_{max}$ with the highest lower confidence bound is then identified and compared with the other arms in the competitive set $A$.
+Arms with upper bounds below the lower bound of $a_{max}$ are then removed from $A$.
+This process of sampling, estimating, and eliminating arms repeats until $A$ only contains one arm. \\
 
 
 One thing that makes this algorithm particularly clever is the way it stores and updates the mean rewards and confidence interval estimates.
@@ -195,15 +197,16 @@ At the core of this algorithm are three variables:
 \end{enumerate}
 
 Because the reward is stored as a cumulative sum and the number of pulls is stored in the diagonal of a matrix containing the laplacian,
-calculating estimates for the mean and the effective number of plays becomes as simple as $\mu_t = V_t^{-1} x_t$ and $t_{eff,i} = \left( \left[ V_t^{-1} \right]_{ii} \right)^{-1}$.
+calculating estimates for the mean and the effective number of plays becomes as simple as $\mu_t = V_t^{-1} x_t$ and $t_{eff,i} = \left( \left[ V_t^{-1} \right]_{ii} \right)^{-1}$. \\
 
 GRUB is fairly computationally complex, requiring an $n \times n$ matrix to be inverted before every decision.
 The size of this matrix combined with the frequency of the inversion limits the size of problems this algorithm can be applied to.
 That said, the inversion of $V_t$ is the only computationally demanding operation in the loop,
-and GRUB makes good use of it by applying the result to estimate both the mean and the confidence interval.
+and GRUB makes good use of it by applying the result to estimate both the mean and the confidence interval. \\
 
 The measured reward values may increase or decrease as more samples are taken, but the values of teff are monotonically increasing, meaning our confidence intervals are ever tightening.
-By only allowing competitive arms to be sampled, GRUB ensures that each pull improves the accuracy of our estimate and contributes to finding the best arm.
+By only allowing competitive arms to be sampled, GRUB ensures that each pull improves the accuracy of our estimate and contributes to finding the best arm. \\
+
 One unique property of GRUB is that it does not require a specific sampling policy.
 GRUB restricts the sampling pool to a limited and ever-decreasing number of arms, but does not impose a restriction on which sample within that set must be chosen.
 Three sensible sampling policies are introduced in Section 4.3 and evaluated in Section 7, but the theoretical results and bounds of Section 5 are applicable to any sampling policy.
@@ -237,7 +240,6 @@ Lemma A.2 provides a bound on the difference between the estimate and true mean 
 It provides the mathematical basis for Lemma 3.2 as well as GRUBs elimination policy.
 When we are confident that an arm is far from our current best arm (when measured using the bound in A.2) it is removed from the set of competitive arms.	\\
 
-
 First it is shown that the difference between the estimate and the true mean of any arm at time $t$ can be expressed as the difference between two terms,
 one containing the true mean and the other containing the combined effect of noise. \\
 
@@ -249,7 +251,41 @@ A variant of Azuma’s inequality is used to find an upper bound for the noise t
 
 \section{Lemma, Theorem, and Definition Descriptions}
 
+\underline{Definition 3.1} defines the Effective Number of Plays $t_{eff}$.
+This term indicates the number of plays that would be needed to arrive at the same confidence interval for that arm if the similarity information was not available.
+If we had no graph information, it would take that many plays to arrive at an estimate of the arm with the same accuracy. \\
+
+\underline{Lemma 3.2} defines a lower bound for the accuracy of our current estimate in terms of $t_{eff}$,
+and shows that the accuracy of our estimate increases as $t_{eff}$ grows. \\
+
+\underline{Definition 4.1} defines Resistance Distance, measurement between two graph nodes.
+\href{https://en.wikipedia.org/wiki/Resistance_distance}{Wikipedia defines it here.} \\
+
+\underline{Definition 4.2} defines Influence Factor, a measurement of how useful a play is on a given arm is to the estimate of other arms. \\
+
+
+\underline{Definition 4.3} defines 2 sets or vertices: Competitive and Non-competitive arms, as well as the division between them.
+The division is largely based on the current estimate of the arm and it’s distance from the estimate of the optimal arm, as well as it’s influence factor.
+(Note: typo in (7) - “j”) \\
+
+\underline{Theorem 4.4} provides an upper bound on the number of plays that are necessary to find the optimal arm when using GRUB ($T_{sufficent}$). \\
+
+\underline{Section 4.3} defines a nonexclusive set of three different sampling policies that can be used with GRUB. \\
+
+\underline{Theorem 5.1} provides a lower bound for the number of plays necessary to find the optimal arm.
+This theorem is useful because it can be used to show that GRUB is minimax optimal for a certain class of graphs. \\
+
+\underline{Corollary 5.2} shows how the bound of Theorem 5.1 relates to the bounds of the non-graphical best arm-identification problem.
+Specifically, that the bound for the non-graphical problem matches the bound for the number of graph components. \\
+
+\underline{Definition 6.1} defines the $\zeta$-best arm, an arm that is sufficiently close to the optimal arm.
+Theorem 6.2 provides an upper bound on the number of plays that are necessary to find the $\zeta$-best arm when using $\zeta$-GRUB ($T_{sufficent}$). This is analogous to Theorem 4.4.
+
+
 \section{Algorithm Implementation}
+
+In progress.
+Most recent version available \href{https://github.com/sstalley/RPE_GRUB}{here}.
 
 \section{Algorithm Modifications and Applications}
 

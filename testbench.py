@@ -96,7 +96,7 @@ def run_simulations():
 
 
 
-cache_name = "./results_cache.npy"
+cache_name = "./sbm_cache.npy"
 fig_name = "BA_figure.eps"
 
 try:

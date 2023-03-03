@@ -112,9 +112,140 @@
 
 \section{Paper Summary}
 
+Section 1 provides background into the Multi-armed bandit problem, listing several applications of the pure-exploration variant.
+It also lists the contributions of this paper, most notably an algorithm that provides strong theoretical guarantees about the number of samples needed to solve the problem.
+The GRUB algorithm solves a variation of the best-arm identification problem.
+Specifically, GRUB nearoptimally solves the best arm (and -best arm) identification problem in terms of samples taken when a graph indicating the similarity between rewards is available.
+In terms of prior art, GRUB is most closely related to spectral graph bandits (available \href{http://proceedings.mlr.press/v32/valko14.pdf}{here}).
+GRUB solves the same problem using a similar elimination-based algorithm, but provides much more theoretical explanation and justification for the mechanism. \\
+
+Section 2 more formally introduces the best-arm (and -best-arm) identification problem and defines graph smoothness in this context.
+Section 3 describes the concept of “effective number of plays”.
+It represents the number of pulls on that arm that would be needed to have a comparably-accurate estimate if the graph information were not available.
+It shows the value of the graph information in a very tangible way. \\
+
+Section 3 then introduces the GRUB algorithm.
+The algorithm works by iteratively taking samples to learn more about the problem while subdividing the arms into 2 sets:
+“Competitive” arms (that GRUB is still considering as a potential best arm) and “Bad” arms (that GRUB has confidently removed from consideration).
+Initially GRUB considers all arms competitive, then iteratively removes arms from consideration as more samples are taken and GRUB becomes more confident that certain arms are bad.
+Each sample taken increases the accuracy of the mean estimate and tightens the confidence bound for both the arm sampled and all “similar” arms on the graph.
+GRUB keeps track of the cumulative reward and the total number of pulls for each arm.
+GRUB then uses these two statistics along with similarity information in the graph to generate two values for each arm: an estimate of the mean and the “effective” number of pulls.
+The estimate of the mean is based off the reward values seen on that particular arm, as well as the rewards seen on similar arms. \\
+
+Note that due to the similarity information arms can have a large effective number of pulls without having any actual pulls.
+This allows GRUB to remove arms from the competitive set without ever actually sampling from them, something not possible when similarity information is unavailable.
+This makes GRUB scalable when compared to algorithms that cannot utilize graph similarity information since it can be applied to problems where sampling every arm is not feasible. \\
+
+Section 4 provides a theoretical analysis of GRUB.
+It explains how the confidence bound calculation works and how it relates to graph properties,
+provides an upper bound on the number of samples needed to identify the best arm in the worst case,
+and lists three sensible sampling policies.
+While these sampling policies are not a strict requirement of GRUB,
+they utilize the same concept of “effective number of plays” to make decisions,
+and are empirically shown to be quite effective. \\
+
+In Section 5 the authors provide a lower bound on the minimum number of samples needed to find the best arm.
+They remark that with the worst case similarity graph (one that indicates no similarities),
+their lower bound matches the bound for pure-exploration bandits without graph information. \\
+
+Section 6 introduces and considers a variation of GRUB that solves the -best arm identification problem (where the goal is to find an arm with a mean reward no less than of the best arm).
+The authors provide tighter bounds for the $\zeta$-GRUB variant and include pseudocode for the (slightly simpler) algorithm.
+It’s worth noting that the $\zeta$-GRUB variant only changes the bounds that decide when an arm is removed from the competitive set, the rest of the algorithm is identical. \\
+
+Section 7 shows performance of GRUB when using a variety of sampling policies and compares those results against the performance of the Non-graphical UCB algorithm.
+They ran GRUB and UCB on a variety of synthetically-generated datasets, as well as a portion of the LastFM and Github Social datasets to investigate the results.
+Personally I would have liked to have seen a comparison with the Spectral Bandits algorithm, especially since it was listed as prior art in Section 1.1.
+Only comparing GRUB to one general UCB algorithm (especially one that doesn’t utilize graph information) seems dubious at best. \\
+
+The Empirical results are remarkably uninteresting - in all cases GRUB outperformed UCB, determining the best arm in fewer samples.
+When utilizing any of the sampling policies listed in section 4.3, GRUB performed even better, requiring even fewer samples to determine the best arm.
+The best sampling policy was joint variance minimization (JVM), with marginal variance minimization (MVM) performing marginally worse. \\
+
+Section 8 lists the future work.
+There are a variety of paths the authors suggest for more research,
+such as further investigation into sampling policies,
+as the ones in this paper are sensible but provide no theoretical guarantees.
+They also note the computational expense of the nn matrix inversion used in GRUB,
+and suggest some potential paths to sparsify the matrix and reduce the O() of the algorithm.
+They also suggest looking into ways to automatically and dynamically determine values like the regularization or the smoothness parameter instead of assuming they are known a priori. \\
+
+\pagebreak
+
 \section{Algorithm Technical Description}
 
+In order to get an initial estimate for each arm, GRUB samples a single arm in each graph component.
+After this initialization GRUB enters a sampling loop.
+After each sample a mean reward estimate and a confidence interval are computed for every arm still in consideration.
+The competitive arm amax with the highest lower confidence bound is then identified and compared with the other arms in the competitive set A.
+Arms with upper bounds below the lower bound of amax are then removed from A.
+This process of sampling, estimating, and eliminating arms repeats until A only contains one arm.
+
+
+One thing that makes this algorithm particularly clever is the way it stores and updates the mean rewards and confidence interval estimates.
+GRUB uses properties of matrices (specifically: the graph laplacian) to make generating statistical estimates for every arm as simple as a few matrix operations.
+At the core of this algorithm are three variables:
+\begin{enumerate}
+    \item A list containing all the arms in competitive set $A$,
+    \item an n dimensional vector $x_t$ that holds the cumulative reward from each arm, and
+    \item an $n \times n$ matrix $V_t$ for remembering the similarities between arms and tracking the number of pulls taken.
+    It is a linear combination of the graph laplacian and a diagonal matrix where each element contains the number of pulls taken for that arm.
+        It is defined as: $ V(\pi_T, G) = V_T = \sum_{t=1}^T e_{\pi_t} e_{\pi_t}^T + \rho L_G $
+ 		
+\end{enumerate}
+
+Because the reward is stored as a cumulative sum and the number of pulls is stored in the diagonal of a matrix containing the laplacian,
+calculating estimates for the mean and the effective number of plays becomes as simple as $\mu_t = V_t^{-1} x_t$ and $t_{eff,i} = \left( \left[ V_t^{-1} \right]_{ii} \right)^{-1}$.
+
+GRUB is fairly computationally complex, requiring an $n \times n$ matrix to be inverted before every decision.
+The size of this matrix combined with the frequency of the inversion limits the size of problems this algorithm can be applied to.
+That said, the inversion of $V_t$ is the only computationally demanding operation in the loop,
+and GRUB makes good use of it by applying the result to estimate both the mean and the confidence interval.
+
+The measured reward values may increase or decrease as more samples are taken, but the values of teff are monotonically increasing, meaning our confidence intervals are ever tightening.
+By only allowing competitive arms to be sampled, GRUB ensures that each pull improves the accuracy of our estimate and contributes to finding the best arm.
+One unique property of GRUB is that it does not require a specific sampling policy.
+GRUB restricts the sampling pool to a limited and ever-decreasing number of arms, but does not impose a restriction on which sample within that set must be chosen.
+Three sensible sampling policies are introduced in Section 4.3 and evaluated in Section 7, but the theoretical results and bounds of Section 5 are applicable to any sampling policy.
+This means that an application-specific sampling policy can be applied.
+It’s also worth noting that GRUB calculates a lot of information (such as the mean and confidence interval) that (as shown in the empirical results) can be very useful when selecting an arm to sample. \\
+
+(Note: there is a typo in Algorithms 1 \& 2: both reference $V_t$ before the value is computed, should be $V_{t-1}$)
+(additional typo in Algorithm 1:  $\beta(t)$ should be $\beta_i(t)$)
+
 \section{Proof of Lemma A.2}
+
+\subsection{Lemma A.2}
+
+For any $T > k(G)$ and $i \in [n]$, the following hold with probability no less than $1- \tfrac{\delta}{w_i \pi_t}$:
+
+\begin{equation}
+ |\hat{\mu}^{i}_{T} - \mu_{i}| \leq \sqrt{\tfrac{1}{t_{eff,i}}}\left( 2\sigma \sqrt{14 \log \left( \tfrac{2 w_i (\boldmath{\pi_T})}{\sigma} \right)} + \rho ||\boldmath{\mu}||_G \right)
+\end{equation}
+
+
+Where $w_i(\pi_t) = a_0 n t_{eff,i}^2$ for some constant $a_0 > 0, \hat{\mu}^i_T$ is the $i$-th coordinate of the estimate from A.1 and,
+
+
+\begin{equation}
+t_{eff,i} = \tfrac{1}{\left[ \left( \sum_{t=1}^T e_{\pi_t} e_{\pi_t}^T + \rho L_G \right)^{-1} \right]_{ii}}
+\end{equation}
+
+\subsection{Summary of Proof}
+
+Lemma A.2 provides a bound on the difference between the estimate and true mean of an arm, providing us with a confidence bound for our estimate.
+It provides the mathematical basis for Lemma 3.2 as well as GRUBs elimination policy.
+When we are confident that an arm is far from our current best arm (when measured using the bound in A.2) it is removed from the set of competitive arms.	\\
+
+
+First it is shown that the difference between the estimate and the true mean of any arm at time $t$ can be expressed as the difference between two terms,
+one containing the true mean and the other containing the combined effect of noise. \\
+
+This expression is then used to construct an upper bound for the magnitude of the difference in the means.
+This bound is the sum of two terms, derived from the true mean and noise terms above.
+Individual bounds for both of these terms are then found and combined to prove the bound in Lemma A.2. \\
+
+A variant of Azuma’s inequality is used to find an upper bound for the noise term, and the cauchy-schwartz inequality is used to upper bound the true mean term.
 
 \section{Lemma, Theorem, and Definition Descriptions}
 

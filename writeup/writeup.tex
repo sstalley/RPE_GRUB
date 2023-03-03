@@ -114,10 +114,25 @@
 
 \section{Paper Summary}
 
-Section 1 provides background into the Multi-armed bandit problem, listing several applications of the pure-exploration variant.
-It also lists the contributions of this paper, most notably an algorithm that provides strong theoretical guarantees about the number of samples needed to solve the problem.
+Section 1 provides background into the multi-armed bandit problem, listing several applications of the pure-exploration variant.
+The multi-armed bandit problem is a classic decision-making problem in the fields of probability theory and machine learning. \\
+
+A ``multi-armed bandit'' is a hypothetical device with that gives a reward when one of it's arms is pulled.
+The reward is a sample drawn from a random distribution based on which arm was pulled.
+Although it is framed as a hypothetical problem, it has many real world applications in the fields where decisions are expensive,
+such as finance, mining, and advertisement.
+In the classic problem, the goal is to maximize the total reward accumulated from a bandit over a series of multiple pulls.
+One of the key challenges in this problem is balancing exploration and exploitation.
+Samples must be used to find a good arm,
+but the pulls used exploring arms should be minimized in order to maximize the pulls used exploiting valuable arms. \\
+
+GRUB considers a pure-exploration variant of this problem that incorporates a similarity graph.
+In this variant the goal is to find the best arm in as few samples as possible, and some correlations between the arms are known. \\
+
+
+Section 1 then lists the contributions of this paper, most notably an algorithm that provides strong theoretical guarantees about the number of samples needed to solve the problem.
 The GRUB algorithm solves a variation of the best-arm identification problem.
-Specifically, GRUB nearoptimally solves the best arm (and -best arm) identification problem in terms of samples taken when a graph indicating the similarity between rewards is available.
+Specifically, GRUB near-optimally solves the best arm (and -best arm) identification problem in terms of samples taken when a graph indicating the similarity between rewards is available.
 In terms of prior art, GRUB is most closely related to spectral graph bandits (available \href{http://proceedings.mlr.press/v32/valko14.pdf}{here}).
 GRUB solves the same problem using a similar elimination-based algorithm, but provides much more theoretical explanation and justification for the mechanism. \\
 
@@ -216,6 +231,8 @@ It’s also worth noting that GRUB calculates a lot of information (such as the 
 (Note: there is a typo in Algorithms 1 \& 2: both reference $V_t$ before the value is computed, should be $V_{t-1}$)
 (additional typo in Algorithm 1:  $\beta(t)$ should be $\beta_i(t)$)
 
+\pagebreak
+
 \section{Proof of Lemma A.2}
 
 \subsection{Lemma A.2}
@@ -249,6 +266,8 @@ Individual bounds for both of these terms are then found and combined to prove t
 
 A variant of Azuma’s inequality is used to find an upper bound for the noise term, and the cauchy-schwartz inequality is used to upper bound the true mean term.
 
+\pagebreak
+
 \section{Lemma, Theorem, and Definition Descriptions}
 
 \underline{Definition 3.1} defines the Effective Number of Plays $t_{eff}$.
@@ -262,7 +281,6 @@ and shows that the accuracy of our estimate increases as $t_{eff}$ grows. \\
 \href{https://en.wikipedia.org/wiki/Resistance_distance}{Wikipedia defines it here.} \\
 
 \underline{Definition 4.2} defines Influence Factor, a measurement of how useful a play is on a given arm is to the estimate of other arms. \\
-
 
 \underline{Definition 4.3} defines 2 sets or vertices: Competitive and Non-competitive arms, as well as the division between them.
 The division is largely based on the current estimate of the arm and it’s distance from the estimate of the optimal arm, as well as it’s influence factor.
@@ -286,6 +304,8 @@ Theorem 6.2 provides an upper bound on the number of plays that are necessary to
 
 In progress.
 Most recent version available \href{https://github.com/sstalley/RPE_GRUB}{here}.
+
+\pagebreak
 
 \section{Algorithm Modifications and Applications}
 

@@ -9,6 +9,7 @@
 \usepackage{algorithm,algorithmic}
 \usepackage{xcolor}
 \usepackage{bbm}
+\usepackage{bm}
 \usepackage{url}
 \usepackage{hyperref}
 
@@ -115,28 +116,27 @@
 \section{Paper Summary}
 
 Section 1 provides background into the multi-armed bandit problem, listing several applications of the pure-exploration variant.
-The multi-armed bandit problem is a classic decision-making problem in the fields of probability theory and machine learning. \\
-
+The multi-armed bandit problem is a classic decision-making problem in the fields of probability theory and machine learning.
 A ``multi-armed bandit'' is a hypothetical device with that gives a reward when one of it's arms is pulled.
 The reward is a sample drawn from a random distribution based on which arm was pulled.
 Although it is framed as a hypothetical problem, it has many real world applications in the fields where decisions are expensive,
 such as finance, mining, and advertisement.
-In the classic problem, the goal is to maximize the total reward accumulated from a bandit over a series of multiple pulls.
+In the classic problem, the goal is to maximize the total reward accumulated from a bandit over a series of multiple pulls. \\
+
 One of the key challenges in this problem is balancing exploration and exploitation.
 Samples must be used to find a good arm,
-but the pulls used exploring arms should be minimized in order to maximize the pulls used exploiting valuable arms. \\
-
-GRUB considers a pure-exploration variant of this problem that incorporates a similarity graph.
-In this variant the goal is to find the best arm in as few samples as possible, and some correlations between the arms are known. \\
+but the pulls used exploring arms should be minimized in order to maximize the pulls used exploiting valuable arms. 
+This paper considers a pure-exploration variant of this problem that incorporates a similarity graph.
+In this variant the goal is to find the best arm in as few samples as possible when some correlations between the arms are known. \\
 
 
 Section 1 then lists the contributions of this paper, most notably an algorithm that provides strong theoretical guarantees about the number of samples needed to solve the problem.
 The GRUB algorithm solves a variation of the best-arm identification problem.
-Specifically, GRUB near-optimally solves the best arm (and -best arm) identification problem in terms of samples taken when a graph indicating the similarity between rewards is available.
+Specifically, GRUB near-optimally solves the best arm (and $\zeta$-best arm) identification problem in terms of samples taken when a graph indicating the similarity between rewards is available.
 In terms of prior art, GRUB is most closely related to spectral graph bandits (available \href{http://proceedings.mlr.press/v32/valko14.pdf}{here}).
 GRUB solves the same problem using a similar elimination-based algorithm, but provides much more theoretical explanation and justification for the mechanism. \\
 
-Section 2 more formally introduces the best-arm (and -best-arm) identification problem and defines graph smoothness in this context.
+Section 2 more formally introduces the best-arm (and $\zeta$-best-arm) identification problem and defines graph smoothness in this context.
 Section 3 describes the concept of “effective number of plays”.
 It represents the number of pulls on that arm that would be needed to have a comparably-accurate estimate if the graph information were not available.
 It shows the value of the graph information in a very tangible way. \\
@@ -166,7 +166,7 @@ In Section 5 the authors provide a lower bound on the minimum number of samples 
 They remark that with the worst case similarity graph (one that indicates no similarities),
 their lower bound matches the bound for pure-exploration bandits without graph information. \\
 
-Section 6 introduces and considers a variation of GRUB that solves the -best arm identification problem (where the goal is to find an arm with a mean reward no less than of the best arm).
+Section 6 introduces and considers a variation of GRUB that solves the $\zeta$-best arm identification problem (where the goal is to find an arm with a mean reward no less than of the best arm).
 The authors provide tighter bounds for the $\zeta$-GRUB variant and include pseudocode for the (slightly simpler) algorithm.
 It’s worth noting that the $\zeta$-GRUB variant only changes the bounds that decide when an arm is removed from the competitive set, the rest of the algorithm is identical. \\
 
@@ -183,8 +183,8 @@ Section 8 lists the future work.
 There are a variety of paths the authors suggest for more research,
 such as further investigation into sampling policies,
 as the ones in this paper are sensible but provide no theoretical guarantees.
-They also note the computational expense of the nn matrix inversion used in GRUB,
-and suggest some potential paths to sparsify the matrix and reduce the O() of the algorithm.
+They also note the computational expense of the $n \times n$ matrix inversion used in GRUB,
+and suggest some potential paths to sparsify the matrix and reduce the $O()$ of the algorithm.
 They also suggest looking into ways to automatically and dynamically determine values like the regularization or the smoothness parameter instead of assuming they are known a priori. \\
 
 \pagebreak
@@ -219,7 +219,7 @@ The size of this matrix combined with the frequency of the inversion limits the 
 That said, the inversion of $V_t$ is the only computationally demanding operation in the loop,
 and GRUB makes good use of it by applying the result to estimate both the mean and the confidence interval. \\
 
-The measured reward values may increase or decrease as more samples are taken, but the values of teff are monotonically increasing, meaning our confidence intervals are ever tightening.
+The measured reward values may increase or decrease as more samples are taken, but the values of $t_{eff}$ are monotonically increasing, meaning our confidence intervals are ever tightening.
 By only allowing competitive arms to be sampled, GRUB ensures that each pull improves the accuracy of our estimate and contributes to finding the best arm. \\
 
 One unique property of GRUB is that it does not require a specific sampling policy.
@@ -258,13 +258,49 @@ It provides the mathematical basis for Lemma 3.2 as well as GRUBs elimination po
 When we are confident that an arm is far from our current best arm (when measured using the bound in A.2) it is removed from the set of competitive arms.	\\
 
 First it is shown that the difference between the estimate and the true mean of any arm at time $t$ can be expressed as the difference between two terms,
-one containing the true mean and the other containing the combined effect of noise. \\
+one containing the true mean and the other containing the combined effect of noise. 
+\begin{eqnarray}
+  \hat{\mu}^i_T - \mu_i = & \ip{\bm{e}_i}{\hat{\bm{\mu}}_T - \bm{\mu}} \\
+  \ip{\bm{e}_i}{V^{-1}_T \left(S_T - \rho L_G \bm{\mu}\right)}
+  = & \ip{\bm{e}_i}{V^{-1}_T S_T - \rho V^{-1}_T L_G \bm{\mu}}
+\end{eqnarray}
 
 This expression is then used to construct an upper bound for the magnitude of the difference in the means.
+\begin{eqnarray}
+  \abs{\hat{\mu}^i_T - \mu_i} = & \abs{\ip{\bm{e}_i}{\hat{\bm{\mu}}_T - \bm{\mu}}} \\
+  = & \abs{\ip{\bm{e}_i}{V^{-1}_T S_T}} + \abs{\ip{\bm{e}_i}{\rho V^{-1}_T L_G \bm{\mu}}}
+\end{eqnarray}
+
 This bound is the sum of two terms, derived from the true mean and noise terms above.
 Individual bounds for both of these terms are then found and combined to prove the bound in Lemma A.2. \\
 
-A variant of Azuma’s inequality is used to find an upper bound for the noise term, and the cauchy-schwartz inequality is used to upper bound the true mean term.
+
+A variant of Azuma’s inequality is used to find an upper bound for the noise term above.
+Noting that the noise term can be rewritten as:
+\begin{eqnarray}
+  \ip{\bm{e}_i}{V^{-1}_T S_T} & = \ip{\bm{e}_i}{V^{-1}_T \left(\sum_{t=1}^{T} \bm{e}_{\pi_t}\eta_t \right)}  \\
+  & = \sum_{t=1}^T \ip{\bm{e}_i}{V^{-1}_T \bm{e}_{\pi_t}} \eta_t
+\end{eqnarray}
+This term is then squared and shown to be bounded by $t_{eff}$
+\begin{equation}
+  \sum_{t=1}^T \left( \ip{\bm{e}_i}{V^{-1}_T \bm{e}_{\pi_t}} \right)^2
+  \leq \ip{\bm{e}_i}{V^{-1}_T \bm{e}_i} = \left[ V^{-1}_T \right]_{ii} = t_{eff}
+\end{equation}
+
+This value is then plugged into the variant of Azuma’s inequality and variable substitution is used to arrive at an upper bound for the noise term above.
+\begin{equation}
+  \abs{\ip{\bm{e}_i}{V^{-1}_T S_T}} \leq 2\sigma \sqrt{14t_{eff}^{-1} \log\left( \tfrac{2}{\delta}\right)}
+\end{equation}
+with probaiblity $1 - \delta$.\\
+
+The cauchy-schwartz inequality is then used to upper bound the true mean term by splitting the single complex inner product into the product of two simpler inner products:
+\begin{eqnarray}
+  \abs{\ip{\bm{e}_i}{\rho V^{-1}_T L_G \bm{\mu}}} = & \rho \ip{\bm{e}_i}{L_G \bm{\mu}}_{V^{-1}_T} \\
+  \leq & \rho \sqrt{\ip{\bm{e_i}}{\bm{e_i}}_{V^{-1}_T}} \sqrt{\ip{L_G \bm{\mu}}{L_G \bm{\mu}}_{V^{-1}_T}} \\
+  \leq & \rho \sqrt{t_{eff}^{-1}} \norm{\bm{\mu}}_G
+\end{eqnarray} \\
+
+Combining the inequalities for these two terms we arrive at lemma 3.2.
 
 \pagebreak
 
@@ -325,7 +361,7 @@ One modification that improves the usefulness of GRUB is to increase the set siz
 While this paper only considers the case where a single best arm is identified, this algorithm can be used to find a set of any size,
 and can be modified to handle cases where the final size of the best-arms set is unknown. \\
 
-To use GRUB to find the N-best arms the following modifications must be made: \\
+To use GRUB to find the N-best arms the following modifications must be made:
 \begin{itemize}
     \item Change the stopping condition from when $|A|=1$ to when $|A|=N$
     \item When determining if an arm is in the competitive set, use the lowest bound of the N-best arms (instead of just $a_{max}$).

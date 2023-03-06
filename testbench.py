@@ -33,30 +33,40 @@ def run_sim(bandit, alg):
 
 def test_graph(n, g, ba):
 
-    # create bandit
-    bandit = grub.Bandit(g)
+    grub_pulls = MAX_PULLS
+    ucb_pulls = MAX_PULLS
 
-    # calculate parameters
-    smoothness = grub.calc_graph_smoothness(bandit.get_means(),g) / 4
+    while (grub_pulls >= MAX_PULLS) or (ucb_pulls >= MAX_PULLS):
+        # create bandit
+        bandit = grub.Bandit(g)
 
-    regularization = 1e-1 # value for ba
-    regularization = 5e-2 # value for SBM
+        # calculate parameters
+        smoothness = grub.calc_graph_smoothness(bandit.get_means(),g) / 4
 
-    subgaussian = 1e-1 # value for ba
-    subgaussian = 5e-2 # value for SBM
-    error_bound = 1e-2
+        regularization = 1e-1 # value for ba
+        regularization = 5e-2 # value for SBM
 
-    #create grub
-    alg = grub.GRUB(g, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
+        subgaussian = 1e-1 # value for ba
+        subgaussian = 5e-2 # value for SBM
+        error_bound = 1e-2
 
-    #print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
+        #create grub
+        alg = grub.GRUB(g, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
 
-    run_sim(bandit, alg)
+        #print(f"bandit:{bandit}, smoothness:{smoothness}, algorithm:{alg}")
 
-    nc_graph = nx.empty_graph(n)
-    ucb = grub.GRUB(nc_graph, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
+        run_sim(bandit, alg)
 
-    run_sim(bandit, ucb)
+        nc_graph = nx.empty_graph(n)
+        ucb = grub.GRUB(nc_graph, regularization=regularization, smoothness=smoothness, subgaussian=subgaussian, error_bound=error_bound)
+
+        run_sim(bandit, ucb)
+
+        # make sure we didn't hit a runaway case
+        grub_pulls = alg.get_pulls()
+        ucb_pulls = ucb.get_pulls()
+
+
 
     true_mean = bandit.get_means()
     grub_mean = alg.get_means()

@@ -43,11 +43,14 @@ def test_graph(n, g, ba):
         # calculate parameters
         smoothness = grub.calc_graph_smoothness(bandit.get_means(),g) / 4
 
-        regularization = 1e-1 # value for ba
-        regularization = 5e-2 # value for SBM
+        if ba:
+            regularization = 1e-1
+            subgaussian = 1e-1
 
-        subgaussian = 1e-1 # value for ba
-        subgaussian = 5e-2 # value for SBM
+        else:
+            regularization = 5e-2
+            subgaussian = 5e-2
+
         error_bound = 1e-2
 
         #create grub
@@ -130,31 +133,53 @@ def run_simulations(ba=False):
 
 
 
-cache_name = "./sbm_cache.npy"
-fig_name = "sbm_figure.eps"
+def plot_results(results, fig_name, title):
+    grub_pulls = results[0]
+    ucb_pulls = results[1]
+    grub_effectives = results[2]
+
+
+    plt.title(title)
+
+    plt.scatter(n_nodes, grub_pulls,      c='r', marker='o', label="GRUB")
+    plt.scatter(n_nodes, ucb_pulls,       c='b', marker='o', label="UCB")
+    plt.scatter(n_nodes, grub_effectives, c='r', marker='x', label="GRUB (effective)")
+    plt.legend()
+    plt.ylabel("Pulls")
+    plt.xlabel("Number of Arms")
+    plt.savefig(fig_name, dpi=300)
+    plt.clf()
+
+
+sbm_cache_name = "./sbm_cache.npy"
+sbm_fig_name = "sbm_figure.pdf"
+
+ba_cache_name = "./ba_cache.npy"
+ba_fig_name = "ba_figure.pdf"
+
 
 try:
-    print("trying to load cached values from", cache_name)
-    results = np.load(cache_name)
+    print("trying to load cached values from", sbm_cache_name)
+    sbm_results = np.load(sbm_cache_name)
     print("loaded cached values")
 
 except IOError:
     print("could not load cache, running simulation")
-    results = run_simulations()
-    np.save(cache_name, results)
+    sbm_results = run_simulations()
+    np.save(sbm_cache_name, sbm_results)
 
-print(results)
+plot_results(sbm_results, sbm_fig_name, "Pulls per number of arms (Stochastic Block Model)")
 
-grub_pulls = results[0]
-ucb_pulls = results[1]
-grub_effectives = results[2]
+try:
+    print("trying to load cached values from", ba_cache_name)
+    ba_results = np.load(ba_cache_name)
+    print("loaded cached values")
+
+except IOError:
+    print("could not load cache, running simulation")
+    ba_results = run_simulations(ba=True)
+    np.save(ba_cache_name, ba_results)
 
 
-plt.title("Average Pulls per Number of Arms")
-
-plt.scatter(n_nodes, grub_pulls, label="GRUB")
-plt.scatter(n_nodes, ucb_pulls, label="UCB")
-plt.scatter(n_nodes, grub_effectives, label="GRUB (effective)")
-plt.legend()
-plt.savefig(fig_name, dpi=300)
+plot_results(ba_results, ba_fig_name, "Pulls per number of arms (Barabasi-Albert Model)")
 

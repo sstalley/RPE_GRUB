@@ -8,12 +8,17 @@ import matplotlib.pyplot as plt
 # initialization
 seed = 0x1359
 np.random.seed(seed)
-MAX_PULLS = 5000
+MAX_PULLS = 1000
 
 #parameters from paper
 n_nodes = [50, 100, 150, 200]
 n_runs = 20
 m = 2
+
+# SBM model parameters
+n_clusters = 10 # must divide all n_nodes values evenly
+sbm_p = 0.95
+sbm_q = 1e-4
 
 
 np.set_printoptions(precision=3)
@@ -26,7 +31,7 @@ def run_sim(bandit, alg):
         # print(f"Testbench: arm:{arm}, reward:{reward}")
         alg.update(arm, reward)
 
-def test_graph(n, g):
+def test_graph(n, g, ba):
 
     # create bandit
     bandit = grub.Bandit(g)
@@ -34,8 +39,11 @@ def test_graph(n, g):
     # calculate parameters
     smoothness = grub.calc_graph_smoothness(bandit.get_means(),g) / 4
 
-    regularization = 1e-1
-    subgaussian = 1e-1
+    regularization = 1e-1 # value for ba
+    regularization = 5e-2 # value for SBM
+
+    subgaussian = 1e-1 # value for ba
+    subgaussian = 5e-2 # value for SBM
     error_bound = 1e-2
 
     #create grub
@@ -58,6 +66,12 @@ def test_graph(n, g):
     grub_arm = np.argmax(grub_mean)
     ucb_arm  = np.argmax(ucb_mean)
 
+    debug = True
+    if (debug):
+        print(f"GRUB:     {alg.get_pulls()}")
+        print(f"UCB:      {ucb.get_pulls()}")
+        print(f"effective:{alg.get_effective_pulls():.3f}")
+
     if grub_arm != true_arm:
         print(f"True best arm: {np.argmax(true_mean)} with mean {np.max(true_mean):.4f}")
         print(f"GRUB best arm: {np.argmax(grub_mean)} with mean {np.max(grub_mean):.4f} after {alg.get_pulls()} pulls ({alg.get_effective_pulls()} effective)")
@@ -69,7 +83,7 @@ def test_graph(n, g):
     return alg.get_pulls(), ucb.get_pulls(), alg.get_effective_pulls()
 
 
-def run_simulations():
+def run_simulations(ba=False):
 
     grub_pulls = []
     ucb_pulls  = []
@@ -83,10 +97,20 @@ def run_simulations():
             print(f"{n} arm run #{run}")
 
             # Create Graph:
-            g = nx.barabasi_albert_graph(n, m, seed=seed)
+            if (ba):
+                g = nx.barabasi_albert_graph(n, m, seed=seed)
+            else:
+                choice = np.random.choice(range(n_clusters), size=n)
+                #sizes = [len(choice[np.where(choice == i)]) for i in range(n_clusters)]
+                sizes = [int(n/n_clusters) for i in range(n_clusters)] # know a-priori that there will be no remainder
+                relation = (sbm_p - sbm_q) * np.eye(n_clusters) + sbm_q * np.ones((n_clusters, n_clusters))
+                relation = (sbm_p - sbm_q) * np.eye(n_clusters) + sbm_q * np.ones((n_clusters, n_clusters))
+                g = nx.stochastic_block_model(sizes, relation)
 
-            grub_pull, ucb_pull, grub_effective = test_graph(n, g)
-
+            grub_p, ucb_p, effective_p = test_graph(n, g, ba)
+            grub_pull.append(grub_p)
+            ucb_pull.append(ucb_p)
+            grub_effective.append(effective_p)
 
         grub_pulls.append(np.mean(grub_pull))
         ucb_pulls.append(np.mean(ucb_pull))
@@ -97,7 +121,7 @@ def run_simulations():
 
 
 cache_name = "./sbm_cache.npy"
-fig_name = "BA_figure.eps"
+fig_name = "sbm_figure.eps"
 
 try:
     print("trying to load cached values from", cache_name)

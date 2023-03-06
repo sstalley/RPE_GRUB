@@ -5,13 +5,16 @@ import matplotlib.pyplot as plt
 
 def calc_graph_smoothness(mean, g):
     laplacian = np.array(nx.laplacian_matrix(g).toarray())
+    # plt.imshow(laplacian, interpolation='nearest')
+    # plt.show()
+
     return np.sqrt(mean.T @ laplacian @ mean)
 
 GEN_TIMEOUT = 1000
 
 class Bandit():
 
-    def __init__(self, g, sd=0.05, scale=20, min_prominence=1.0):
+    def __init__(self, g, sd=0.05, scale=20, min_prominence=2.0):
         self.n_pulls = 0
         self.n_arms = nx.number_of_nodes(g)
         self.g = g
@@ -22,8 +25,6 @@ class Bandit():
         timeout = 0
         while((self.prominence() < min_prominence) and timeout < GEN_TIMEOUT):
             self.means = np.random.multivariate_normal(np.zeros(self.n_arms), scale * cov)
-
-        # print(f"prominence: {self.prominence()}")
 
     def pull(self, arm):
         noise = 0

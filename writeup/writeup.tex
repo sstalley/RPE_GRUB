@@ -335,11 +335,47 @@ Specifically, that the bound for the non-graphical problem matches the bound for
 \underline{Definition 6.1} defines the $\zeta$-best arm, an arm that is sufficiently close to the optimal arm.
 Theorem 6.2 provides an upper bound on the number of plays that are necessary to find the $\zeta$-best arm when using $\zeta$-GRUB ($T_{sufficent}$). This is analogous to Theorem 4.4.
 
+\pagebreak
 
-\section{Algorithm Implementation}
+\section{Algorithm Implementation \& Results}
 
-In progress.
-Most recent version available \href{https://github.com/sstalley/RPE_GRUB}{here}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.45\textwidth]{../ba_figure.pdf}
+    \hfill
+    \includegraphics[width=0.45\linewidth]{../sbm_figure.pdf}
+	  \caption{Results of GRUB compared with UCB on multi-armed bandits with various numbers of arms.}
+    \label{fig:results}
+\end{figure}
+
+The GRUB and UCB algorithms were implemented in python and ran in an attempt to replicate a portion of the results seen in Figure 1 of the paper.
+Figure \ref{fig:results} shows the results when our GRUB and UCB implementations were run on 2 synthetic datasets.
+Specifically, the results shown show compare performance of GRUB and UCB on datasets generated from the Stochastic Block and Barabasi-Albert models.
+Like the results of the paper, the values shown at each point are the combined results of the algorithm on 20 different model instances. \\
+
+It is worth noting that the authors of the paper released their source code publicly.
+Their implementation was not viewed or used as a reference in the construction of ours in any way.
+This likely explains the differences in our results. \\
+
+One aspect unexplained by the paper is how to generate the underlying means from the graph information.
+The paper details the mechanism to quantify the smoothness of a graph given the laplacian and means,
+but does not detail how to construct means from a given graph.
+We implemented a covariance-based mechanism that utilizes the graph associativity information to generate the means.
+This allowed us to generate synthetic data and quantify their smoothness,
+but it is unknown if our set is comparable to the results of the paper. \\
+
+Like in the paper, our results show that GRUB can outperform UCB in all cases.
+In addition to the actual number of pulls taken by GRUB, the effective number of pulls is also shown.
+This shows how much additional information gained by GRUB from the graph information -
+GRUB frequently finds the best arm with less pulls because it learns more per pull. \\
+
+
+The source code to run our implementation of these algorithms (as well as a script to generate the above figures)
+is available \href{https://github.com/sstalley/RPE_GRUB}{here}. \\
+
+
+
 
 \pagebreak
 

@@ -147,6 +147,7 @@ def plot_results(results, fig_name, title):
     plt.legend()
     plt.ylabel("Pulls")
     plt.xlabel("Number of Arms")
+    plt.xticks(n_nodes)
     plt.savefig(fig_name, dpi=300)
     plt.clf()
 
